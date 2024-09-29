@@ -13,7 +13,7 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = int(SCREEN_WIDTH * 0.8)
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption('Shooter Game')
+pygame.display.set_caption('Shooter')
 
 # set framerate
 clock = pygame.time.Clock()
@@ -41,22 +41,20 @@ shoot = False
 grenade = False
 grenade_thrown = False
 
+
 # load music and sounds
-mixer.music.load('audio/music2.mp3')
-mixer.music.set_volume(0.2)
-mixer.music.play(-1, 0.0, 5000)
-jump_fx = mixer.Sound('audio/jump.wav')
-jump_fx.set_volume(0.5)
-shot_fx = mixer.Sound('audio/shot.wav')
-shot_fx.set_volume(0.5)
-grenade_fx = mixer.Sound('audio/grenade.wav')
-grenade_fx.set_volume(0.5)
+# pygame.mixer.music.load('audio/music2.mp3')
+# pygame.mixer.music.set_volume(0.3)
+# pygame.mixer.music.play(-1, 0.0, 5000)
+jump_fx = pygame.mixer.Sound('audio/jump.wav')
+jump_fx.set_volume(0.05)
+shot_fx = pygame.mixer.Sound('audio/shot.wav')
+shot_fx.set_volume(0.05)
+grenade_fx = pygame.mixer.Sound('audio/grenade.wav')
+grenade_fx.set_volume(0.05)
+
 
 # load images
-# main image
-main_img = pygame.image.load('img/main2.jpg').convert_alpha()
-main_img = pygame.transform.scale(
-    main_img, (int(main_img.get_width() * 0.8), int(main_img.get_height() * 0.8)))
 # button images
 start_img = pygame.image.load('img/start_btn.png').convert_alpha()
 exit_img = pygame.image.load('img/exit_btn.png').convert_alpha()
@@ -212,7 +210,7 @@ class Soldier(pygame.sprite.Sprite):
 
         # jump
         if self.jump == True and self.in_air == False:
-            self.vel_y = -12
+            self.vel_y = -11
             self.jump = False
             self.in_air = True
 
@@ -618,7 +616,7 @@ class Explosion(pygame.sprite.Sprite):
 
 
 class ScreenFade():
-    def __init__(self, direction, colour, speed) -> None:
+    def __init__(self, direction, colour, speed):
         self.direction = direction
         self.colour = colour
         self.speed = speed
@@ -628,14 +626,14 @@ class ScreenFade():
         fade_complete = False
         self.fade_counter += self.speed
         if self.direction == 1:  # whole screen fade
-            pygame.draw.rect(screen, self.colour,
-                             (0 - self.fade_counter, 0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
-            pygame.draw.rect(screen, self.colour,
-                             (SCREEN_WIDTH // 2 + self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
-            pygame.draw.rect(screen, self.colour,
-                             (0, 0 - self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
-            pygame.draw.rect(screen, self.colour,
-                             (0, SCREEN_HEIGHT // 2 + self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
+            pygame.draw.rect(screen, self.colour, (0 - self.fade_counter,
+                             0, SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+            pygame.draw.rect(screen, self.colour, (SCREEN_WIDTH // 2 +
+                             self.fade_counter, 0, SCREEN_WIDTH, SCREEN_HEIGHT))
+            pygame.draw.rect(screen, self.colour, (0, 0 -
+                             self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT // 2))
+            pygame.draw.rect(screen, self.colour, (0, SCREEN_HEIGHT //
+                             2 + self.fade_counter, SCREEN_WIDTH, SCREEN_HEIGHT))
         if self.direction == 2:  # vertical screen fade down
             pygame.draw.rect(screen, self.colour,
                              (0, 0, SCREEN_WIDTH, 0 + self.fade_counter))
@@ -645,9 +643,10 @@ class ScreenFade():
         return fade_complete
 
 
-# create scree fades
+# create screen fades
 intro_fade = ScreenFade(1, BG, 4)
 death_fade = ScreenFade(2, BG, 4)
+
 
 # create buttons
 start_button = button.Button(
@@ -691,7 +690,6 @@ while run:
     if start_game == False:
         # draw menu
         screen.fill(BG)
-        screen.blit(main_img, (0, 0))
         # add buttons
         if start_button.draw(screen):
             start_game = True
@@ -744,7 +742,7 @@ while run:
                 start_intro = False
                 intro_fade.fade_counter = 0
 
-            # update player actions
+        # update player actions
         if player.alive:
             # shoot bullets
             if shoot:
@@ -757,22 +755,20 @@ while run:
                 # reduce grenades
                 player.grenades -= 1
                 grenade_thrown = True
-                if player.in_air:
-                    player.update_action(2)  # 2: jump
-                elif moving_left or moving_right:
-                    player.update_action(1)  # 1: run
-                else:
-                    player.update_action(0)  # 0: idle
+            if player.in_air:
+                player.update_action(2)  # 2: jump
+            elif moving_left or moving_right:
+                player.update_action(1)  # 1: run
+            else:
+                player.update_action(0)  # 0: idle
             screen_scroll, level_complete = player.move(
                 moving_left, moving_right)
             bg_scroll -= screen_scroll
-
             # check if player has completed the level
             if level_complete:
                 start_intro = True
                 level += 1
                 bg_scroll = 0
-
                 world_data = reset_level()
                 if level <= MAX_LEVELS:
                     # load in level data and create world
@@ -790,7 +786,6 @@ while run:
                     death_fade.fade_counter = 0
                     start_intro = True
                     bg_scroll = 0
-
                     world_data = reset_level()
                     # load in level data and create world
                     with open(f'level{level}_data.csv', newline='') as csvfile:
