@@ -3,6 +3,7 @@ from pygame import mixer
 import os
 import random
 import csv
+import asyncio
 import button
 
 mixer.init()
@@ -64,6 +65,9 @@ pine1_img = pygame.image.load('img/Background/pine1.png').convert_alpha()
 pine2_img = pygame.image.load('img/Background/pine2.png').convert_alpha()
 mountain_img = pygame.image.load('img/Background/mountain.png').convert_alpha()
 sky_img = pygame.image.load('img/Background/sky_cloud.png').convert_alpha()
+win_img = pygame.image.load('img/Background/win.png').convert_alpha()
+win_img = pygame.transform.scale(
+    win_img, (SCREEN_WIDTH, SCREEN_HEIGHT))
 # store tiles in a list
 img_list = []
 for x in range(TILE_TYPES):
@@ -681,6 +685,8 @@ with open(f'level{level}_data.csv', newline='') as csvfile:
 world = World()
 player, health_bar = world.process_data(world_data)
 
+# Add this global variable to track if the game is won
+game_won = False
 
 run = True
 while run:
@@ -697,104 +703,114 @@ while run:
         if exit_button.draw(screen):
             run = False
     else:
-        # update background
-        draw_bg()
-        # draw world map
-        world.draw()
-        # show player health
-        health_bar.draw(player.health)
-        # show ammo
-        draw_text('AMMO: ', font, WHITE, 10, 35)
-        for x in range(player.ammo):
-            screen.blit(bullet_img, (90 + (x * 10), 40))
-        # show grenades
-        draw_text('GRENADES: ', font, WHITE, 10, 60)
-        for x in range(player.grenades):
-            screen.blit(grenade_img, (135 + (x * 15), 60))
-
-        player.update()
-        player.draw()
-
-        for enemy in enemy_group:
-            enemy.ai()
-            enemy.update()
-            enemy.draw()
-
-        # update and draw groups
-        bullet_group.update()
-        grenade_group.update()
-        explosion_group.update()
-        item_box_group.update()
-        decoration_group.update()
-        water_group.update()
-        exit_group.update()
-        bullet_group.draw(screen)
-        grenade_group.draw(screen)
-        explosion_group.draw(screen)
-        item_box_group.draw(screen)
-        decoration_group.draw(screen)
-        water_group.draw(screen)
-        exit_group.draw(screen)
-
-        # show intro
-        if start_intro == True:
-            if intro_fade.fade():
-                start_intro = False
-                intro_fade.fade_counter = 0
-
-        # update player actions
-        if player.alive:
-            # shoot bullets
-            if shoot:
-                player.shoot()
-            # throw grenades
-            elif grenade and grenade_thrown == False and player.grenades > 0:
-                grenade = Grenade(player.rect.centerx + (0.5 * player.rect.size[0] * player.direction),
-                                  player.rect.top, player.direction)
-                grenade_group.add(grenade)
-                # reduce grenades
-                player.grenades -= 1
-                grenade_thrown = True
-            if player.in_air:
-                player.update_action(2)  # 2: jump
-            elif moving_left or moving_right:
-                player.update_action(1)  # 1: run
-            else:
-                player.update_action(0)  # 0: idle
-            screen_scroll, level_complete = player.move(
-                moving_left, moving_right)
-            bg_scroll -= screen_scroll
-            # check if player has completed the level
-            if level_complete:
-                start_intro = True
-                level += 1
-                bg_scroll = 0
-                world_data = reset_level()
-                if level <= MAX_LEVELS:
-                    # load in level data and create world
-                    with open(f'level{level}_data.csv', newline='') as csvfile:
-                        reader = csv.reader(csvfile, delimiter=',')
-                        for x, row in enumerate(reader):
-                            for y, tile in enumerate(row):
-                                world_data[x][y] = int(tile)
-                    world = World()
-                    player, health_bar = world.process_data(world_data)
+        if game_won:
+            # Display "You Win" message when the player completes the last level
+            screen.fill(BG)
+            screen.blit(win_img, (0, 0))
+            pygame.display.flip()
+            # Pause the game for 5 seconds (5000 milliseconds) before closing or restarting
+            pygame.time.delay(5000)
+            run = False  # Exit the game loop after displaying the win screen
         else:
-            screen_scroll = 0
-            if death_fade.fade():
-                if restart_button.draw(screen):
-                    death_fade.fade_counter = 0
+
+            # update background
+            draw_bg()
+            # draw world map
+            world.draw()
+            # show player health
+            health_bar.draw(player.health)
+            # show ammo
+            draw_text('AMMO: ', font, WHITE, 10, 35)
+            for x in range(player.ammo):
+                screen.blit(bullet_img, (90 + (x * 10), 40))
+            # show grenades
+            draw_text('GRENADES: ', font, WHITE, 10, 60)
+            for x in range(player.grenades):
+                screen.blit(grenade_img, (135 + (x * 15), 60))
+
+            player.update()
+            player.draw()
+
+            for enemy in enemy_group:
+                enemy.ai()
+                enemy.update()
+                enemy.draw()
+
+            # update and draw groups
+            bullet_group.update()
+            grenade_group.update()
+            explosion_group.update()
+            item_box_group.update()
+            decoration_group.update()
+            water_group.update()
+            exit_group.update()
+            bullet_group.draw(screen)
+            grenade_group.draw(screen)
+            explosion_group.draw(screen)
+            item_box_group.draw(screen)
+            decoration_group.draw(screen)
+            water_group.draw(screen)
+            exit_group.draw(screen)
+
+            # show intro
+            if start_intro == True:
+                if intro_fade.fade():
+                    start_intro = False
+                    intro_fade.fade_counter = 0
+
+            # update player actions
+            if player.alive:
+                # shoot bullets
+                if shoot:
+                    player.shoot()
+                # throw grenades
+                elif grenade and grenade_thrown == False and player.grenades > 0:
+                    grenade = Grenade(player.rect.centerx + (0.5 * player.rect.size[0] * player.direction),
+                                      player.rect.top, player.direction)
+                    grenade_group.add(grenade)
+                    # reduce grenades
+                    player.grenades -= 1
+                    grenade_thrown = True
+                if player.in_air:
+                    player.update_action(2)  # 2: jump
+                elif moving_left or moving_right:
+                    player.update_action(1)  # 1: run
+                else:
+                    player.update_action(0)  # 0: idle
+                screen_scroll, level_complete = player.move(
+                    moving_left, moving_right)
+                bg_scroll -= screen_scroll
+                # check if player has completed the level
+                if level_complete:
                     start_intro = True
+                    level += 1
                     bg_scroll = 0
                     world_data = reset_level()
-                    # load in level data and create world
-                    with open(f'level{level}_data.csv', newline='') as csvfile:
-                        reader = csv.reader(csvfile, delimiter=',')
-                        for x, row in enumerate(reader):
-                            for y, tile in enumerate(row):
-                                world_data[x][y] = int(tile)
-                    world = World()
-                    player, health_bar = world.process_data(world_data)
+                    if level <= MAX_LEVELS:
+                        # load in level data and create world
+                        with open(f'level{level}_data.csv', newline='') as csvfile:
+                            reader = csv.reader(csvfile, delimiter=',')
+                            for x, row in enumerate(reader):
+                                for y, tile in enumerate(row):
+                                    world_data[x][y] = int(tile)
+                        world = World()
+                        player, health_bar = world.process_data(world_data)
+            else:
+                screen_scroll = 0
+                if death_fade.fade():
+                    if restart_button.draw(screen):
+                        death_fade.fade_counter = 0
+                        start_intro = True
+                        bg_scroll = 0
+                        world_data = reset_level()
+                        # load in level data and create world
+                        with open(f'level{level}_data.csv', newline='') as csvfile:
+                            reader = csv.reader(csvfile, delimiter=',')
+                            for x, row in enumerate(reader):
+                                for y, tile in enumerate(row):
+                                    world_data[x][y] = int(tile)
+                        world = World()
+                        player, health_bar = world.process_data(world_data)
 
     for event in pygame.event.get():
         # quit game
