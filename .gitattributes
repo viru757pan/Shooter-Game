@@ -1,1 +1,39 @@
-*.csv text eol=lf
+# Python related
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.env
+*.venv
+venv/
+ENV/
+env/
+
+# Virtual environment
+.venv/
+env/
+venv/
+
+# IDEs
+.vscode/
+.idea/
+
+# Mac system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Pygame/Build related
+build/
+dist/
+*.spec
+
+# Logs
+*.log
+
+# Data files (optional if you want to track them)
+# *.csv
+
+# Misc
+*.bak
+*.swp
